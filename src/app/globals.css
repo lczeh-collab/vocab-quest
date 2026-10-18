@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --color-grape: #7c3aed;
+  --color-bubble: #ec4899;
+  --color-sun: #facc15;
+  --color-mint: #10b981;
+  --color-ink: #1e1b4b;
+}
+
+body {
+  background: linear-gradient(160deg, #faf5ff 0%, #fdf2f8 50%, #fefce8 100%) fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@utility card {
+  @apply rounded-3xl bg-white/90 p-6 shadow-lg shadow-purple-200/60 ring-1 ring-purple-100;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold transition
+    active:scale-95 disabled:opacity-50 disabled:active:scale-100;
+}
+@utility btn-primary {
+  @apply btn bg-grape text-white shadow-md shadow-purple-300 hover:bg-violet-700;
+}
+@utility btn-ghost {
+  @apply btn bg-white text-grape ring-2 ring-purple-200 hover:bg-purple-50;
+}
+
+@utility input {
+  @apply w-full rounded-xl border-2 border-purple-100 bg-white px-3 py-2 outline-none focus:border-grape;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: pop 0.35s ease-out; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+.animate-shake { animation: shake 0.3s ease-in-out; }
