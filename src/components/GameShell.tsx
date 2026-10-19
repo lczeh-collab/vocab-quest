@@ -15,7 +15,7 @@ interface Props {
   title: string;
   size: number;
   minWords: number;
-  children: (round: Word[], finish: Finish) => React.ReactNode;
+  children: (round: Word[], finish: Finish, allWords: Word[]) => React.ReactNode;
 }
 
 export default function GameShell({ game, title, size, minWords, children }: Props) {
@@ -58,7 +58,7 @@ export default function GameShell({ game, title, size, minWords, children }: Pro
   return (
     <div>
       <h1 className="mb-4 text-center text-3xl font-black">{title}</h1>
-      <div key={playId}>{children(round, finish)}</div>
+      <div key={playId}>{children(round, finish, words)}</div>
       <button className="mx-auto mt-6 block text-sm text-purple-400 underline" onClick={() => setPlayId((n) => n + 1)}>
         Shuffle new words
       </button>
