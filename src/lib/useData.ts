@@ -1,15 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "./supabase/client";
+import { lazyClient } from "./supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadProfile } from "./progress";
 import type { Profile, Word } from "./types";
 
 export function useSupabase() {
-  return useMemo(() => createClient(), []);
+  return useMemo(() => lazyClient(), []);
 }
 
-async function fetchWords(supabase: ReturnType<typeof createClient>) {
+async function fetchWords(supabase: SupabaseClient) {
   const { data } = await supabase.from("words").select("*").order("created_at", { ascending: false });
   return (data as Word[]) ?? [];
 }

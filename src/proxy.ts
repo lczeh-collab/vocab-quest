@@ -3,6 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Refreshes the Supabase session cookie and sends logged-out visitors to /login.
 export async function proxy(request: NextRequest) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return new NextResponse(
+      "Vocab Quest is not configured yet: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY " +
+        "in Vercel → Settings → Environment Variables, then redeploy.",
+      { status: 503 },
+    );
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
