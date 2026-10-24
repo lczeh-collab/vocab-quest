@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BADGES, roundMessage } from "@/lib/gamification";
 import { pickRound } from "@/lib/leitner";
-import { finishRound, type RoundSummary } from "@/lib/progress";
+import { finishRound, type RoundExtra, type RoundSummary } from "@/lib/progress";
 import type { Answer, GameId, Word } from "@/lib/types";
 import { useWords } from "@/lib/useData";
 
-export type Finish = (answers: Answer[], extra?: { seconds?: number; bestCombo?: number }) => void;
+export type Finish = (answers: Answer[], extra?: RoundExtra) => void;
 
 interface Props {
   game: GameId;

@@ -8,6 +8,7 @@ const GAMES = [
   { href: "/play/match", emoji: "⚡", name: "Speed Match", text: "Match pairs against the clock", color: "from-pink-400 to-rose-500" },
   { href: "/play/type", emoji: "⌨️", name: "Type It!", text: "Type the translation, build combos", color: "from-amber-300 to-orange-400" },
   { href: "/play/balloon", emoji: "🎈", name: "Balloon Pop", text: "Pop the right balloon before it flies away", color: "from-sky-400 to-cyan-500" },
+  { href: "/play/memory", emoji: "🧠", name: "Memory", text: "Flip two cards, find the pairs", color: "from-emerald-400 to-teal-500" },
 ];
 
 export default function Home() {
@@ -53,7 +54,7 @@ export default function Home() {
           <p className="text-center text-lg font-bold">
             {due > 0 ? `${due} word${due === 1 ? "" : "s"} waiting for practice today 💪` : "All caught up! Play for bonus XP 🌟"}
           </p>
-          <section className="grid gap-4 sm:grid-cols-3">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {GAMES.map((g) => (
               <Link
                 key={g.href}
@@ -71,7 +72,7 @@ export default function Home() {
 
       <section className="card">
         <h2 className="text-xl font-black">Badges</h2>
-        <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 lg:grid-cols-9">
+        <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 lg:grid-cols-10">
           {BADGES.map((b) => {
             const has = profile.badges.includes(b.id);
             return (

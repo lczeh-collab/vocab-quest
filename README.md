@@ -14,7 +14,7 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 ```
 
 - **Spaced repetition:** each word sits in a Leitner box 1–5. A right answer moves it up a box (due again after 0/1/3/7/14 days); a wrong answer sends it back to box 1. Each round picks due words first.
-- **Games:** Speed Match (Hungarian words with their pictures on the left, English on the right, against the clock; the English is read aloud on a match), Type It (large picture and the Hungarian word, plus a gap-sentence clue for hard words; lenient checking that accepts typos and missing accents, with hints; correct answers are read aloud), Balloon Pop (pick the translation before the balloon escapes).
+- **Games:** Speed Match (Hungarian words with their pictures on the left, English on the right, against the clock; the English is read aloud on a match), Type It (large picture and the Hungarian word, plus a gap-sentence clue for hard words; lenient checking that accepts typos and missing accents, with hints; correct answers are read aloud), Balloon Pop (pick the translation before the balloon escapes), Memory (4×4 cards: Hungarian with picture vs English, flip two at a time; moves, timer and best result; bonus XP for few moves).
 - **Gamification:** XP, levels and titles, daily streak, combos, 9 badges, end-of-round feedback with "tricky words".
 - **Pictures:** every word gets an AI picture. Claude Haiku decides what to show (for hard words like "although" it picks a simple example expression and pictures that), GPT (`gpt-image-1-mini`) draws it, and it is stored in the `word_pictures` table (served only to its family by `/api/picture`). One picture per word per family, shared by siblings; "🔄 New picture" on the Words page replaces it.
 - **Family players:** after the family email login, a "Who's playing?" screen. Each player has a name, avatar, colour and 4-digit PIN, plus their own words, XP, streak and badges.
@@ -24,7 +24,7 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 | `src/app/api/parse/route.ts` | Claude call: image → structured word pairs |
 | `src/app/scan/page.tsx` | Upload / webcam capture + review screen |
 | `src/app/words/page.tsx` | Word list: edit, delete, add, search |
-| `src/app/play/*` | The three games |
+| `src/app/play/*` | The four games |
 | `src/components/GameShell.tsx` | Round loading + results/feedback screen |
 | `src/lib/leitner.ts`, `progress.ts`, `gamification.ts`, `check.ts` | Learning logic |
 | `src/app/players/page.tsx`, `src/app/me/page.tsx` | Who's playing? / add player / edit profile and PIN |

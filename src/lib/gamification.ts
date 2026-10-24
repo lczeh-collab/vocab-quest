@@ -40,6 +40,7 @@ export const BADGES: Badge[] = [
   { id: "spelling_bee", emoji: "🐝", name: "Spelling Bee", hint: "Get every word right in a full Type It round" },
   { id: "explorer", emoji: "🧭", name: "Explorer", hint: "Play all 4 games" },
   { id: "dedicated", emoji: "🏅", name: "Dedicated", hint: "Finish 50 rounds" },
+  { id: "memory_master", emoji: "🃏", name: "Memory Master", hint: "Clear an 8-pair Memory board in 12 moves or fewer" },
 ];
 
 /** Local date as YYYY-MM-DD, so streaks follow her day, not UTC. */

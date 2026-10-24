@@ -16,6 +16,14 @@ export async function loadPlayer(supabase: SupabaseClient): Promise<Player> {
   return data as Player;
 }
 
+/** Game-specific facts about a round, used for badges and bonus XP. */
+export interface RoundExtra {
+  seconds?: number;
+  bestCombo?: number;
+  moves?: number;
+  bonusXp?: number;
+}
+
 export interface RoundSummary {
   score: number;
   total: number;
@@ -34,7 +42,7 @@ export async function finishRound(
   supabase: SupabaseClient,
   game: GameId,
   answers: Answer[],
-  extra: { seconds?: number; bestCombo?: number } = {},
+  extra: RoundExtra = {},
 ): Promise<RoundSummary> {
   // A word answered several times in one round counts by its last answer.
   const byWord = new Map(answers.map((a) => [a.word.id, a]));
@@ -46,7 +54,7 @@ export async function finishRound(
 
   const score = answers.filter((a) => a.correct).length;
   const total = answers.length;
-  const xpGained = score * XP_PER_CORRECT + (total ? XP_ROUND_BONUS : 0);
+  const xpGained = score * XP_PER_CORRECT + (total ? XP_ROUND_BONUS : 0) + (extra.bonusXp ?? 0);
 
   const profile = await loadPlayer(supabase);
   const xp = profile.xp + xpGained;
@@ -64,9 +72,11 @@ export async function finishRound(
   const earned = new Set(profile.badges);
   const award = (id: string, cond: boolean) => cond && earned.add(id);
   award("first_round", true);
-  award("perfect", total >= 5 && score === total);
+  // Memory counts every found pair as right, so a full score there proves nothing.
+  award("perfect", game !== "memory" && total >= 5 && score === total);
   award("speedster", game === "match" && extra.seconds !== undefined && extra.seconds < 30);
   award("combo10", (extra.bestCombo ?? 0) >= 10);
+  award("memory_master", game === "memory" && total >= 8 && extra.moves !== undefined && extra.moves <= total + 4);
   award("streak3", streak >= 3);
   award("streak7", streak >= 7);
   award("words50", (wordCount ?? 0) >= 50);
@@ -80,7 +90,7 @@ export async function finishRound(
   award("balloon_hero", game === "balloon" && total >= 12 && score === total);
   award("spelling_bee", game === "type" && total >= 10 && score === total);
   // "Play all 4 games": stays out of reach until a 4th game is added to this list.
-  const allGames: GameId[] = ["match", "type", "balloon"];
+  const allGames: GameId[] = ["match", "type", "balloon", "memory"];
   award("explorer", allGames.length >= 4 && allGames.every((g) => gamesPlayed.has(g)));
   award("dedicated", roundsPlayed >= 50);
   const newBadges = BADGES.map((b) => b.id).filter((id) => earned.has(id) && !profile.badges.includes(id));

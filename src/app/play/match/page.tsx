@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import GameShell, { speak, type Finish } from "@/components/GameShell";
+import PictureThumb from "@/components/PictureThumb";
 import { cheer } from "@/lib/gamification";
 import { shuffle } from "@/lib/leitner";
-import { pictureKey, usePictures, type Picture } from "@/lib/pictures";
+import { pictureKey, usePictures } from "@/lib/pictures";
 import type { Word } from "@/lib/types";
 
 export default function MatchPage() {
@@ -83,7 +84,7 @@ function Match({ round, finish }: { round: Word[]; finish: Finish }) {
         <div className="space-y-2">
           {left.map((w) => (
             <button key={w.id} disabled={matched.has(w.id)} onClick={() => choose("hu", w)} className={tileClass("hu", w)}>
-              <Thumb picture={pictures?.get(pictureKey(w.en))} />
+              <PictureThumb picture={pictures?.get(pictureKey(w.en))} />
               <span className="min-w-0 flex-1 truncate px-1">{w.hu}</span>
             </button>
           ))}
@@ -98,24 +99,5 @@ function Match({ round, finish }: { round: Word[]; finish: Finish }) {
       </div>
       {toast && <p className="pointer-events-none fixed inset-x-0 top-1/3 text-center text-4xl font-black text-grape animate-pop">{toast}</p>}
     </div>
-  );
-}
-
-/** Square picture as tall as the tile; hovering shows it big. Words without a picture show none. */
-function Thumb({ picture }: { picture?: Picture }) {
-  // An empty space of the same size keeps all Hungarian words lined up.
-  if (!picture) return <span className="aspect-square h-full shrink-0" />;
-  return (
-    <span className="group/pic relative h-full shrink-0">
-      {/* Pictures need the login cookie, which Next's image optimizer doesn't send. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={picture.url} alt="" className="aspect-square h-full rounded-xl object-cover" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={picture.url}
-        alt=""
-        className="pointer-events-none absolute left-full top-1/2 z-20 ml-3 hidden h-56 w-56 max-w-none -translate-y-1/2 rounded-2xl object-cover shadow-2xl ring-4 ring-white group-hover/pic:block"
-      />
-    </span>
   );
 }
