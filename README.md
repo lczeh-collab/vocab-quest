@@ -14,7 +14,7 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 ```
 
 - **Spaced repetition:** each word sits in a Leitner box 1–5. A right answer moves it up a box (due again after 0/1/3/7/14 days); a wrong answer sends it back to box 1. Each round picks due words first.
-- **Games:** Speed Match (against the clock), Type It (lenient checking that accepts typos and missing accents, with hints), Balloon Pop (pick the translation before the balloon escapes).
+- **Games:** Speed Match (Hungarian words with their pictures on the left, English on the right, against the clock; the English is read aloud on a match), Type It (lenient checking that accepts typos and missing accents, with hints), Balloon Pop (pick the translation before the balloon escapes).
 - **Gamification:** XP, levels and titles, daily streak, combos, 9 badges, end-of-round feedback with "tricky words".
 - **Pictures:** every word gets an AI picture. Claude Haiku decides what to show (for hard words like "although" it picks a simple example expression and pictures that), GPT (`gpt-image-1-mini`) draws it, and it is stored in the `word_pictures` table (served only to its family by `/api/picture`). One picture per word per family, shared by siblings; "🔄 New picture" on the Words page replaces it.
 - **Family players:** after the family email login, a "Who's playing?" screen. Each player has a name, avatar, colour and 4-digit PIN, plus their own words, XP, streak and badges.
