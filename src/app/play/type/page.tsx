@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import GameShell, { speak, type Finish } from "@/components/GameShell";
-import { checkAnswer, type Verdict } from "@/lib/check";
+import { checkAnswer, gapSentence, type Verdict } from "@/lib/check";
 import { cheer, comfort } from "@/lib/gamification";
+import { pictureKey, usePictures } from "@/lib/pictures";
 import type { Answer, Word } from "@/lib/types";
 
 export default function TypePage() {
@@ -31,9 +32,18 @@ function TypeIt({ round, finish }: { round: Word[]; finish: Finish }) {
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const buttons = useRef<HTMLDivElement>(null);
+  const { pictures } = usePictures();
 
   const word = round[i];
-  useEffect(() => input.current?.focus(), [i]);
+  const picture = pictures?.get(pictureKey(word.en));
+  const clue = picture?.example ? gapSentence(picture.example, word.en) : null;
+  const ready = pictures !== null;
+  useEffect(() => input.current?.focus(), [i, ready]);
+  // On small screens the feedback can push the Next button below the edge; bring it into view.
+  useEffect(() => {
+    if (verdict) buttons.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [verdict]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +69,9 @@ function TypeIt({ round, finish }: { round: Word[]; finish: Finish }) {
 
   const ok = verdict && verdict !== "wrong";
 
+  // Wait for the pictures so the first word doesn't jump when its picture arrives.
+  if (!ready) return <p className="mt-20 text-center text-xl">Loading... ✨</p>;
+
   return (
     <div className="mx-auto max-w-lg">
       <div className="mb-3 flex justify-between font-bold">
@@ -69,8 +82,19 @@ function TypeIt({ round, finish }: { round: Word[]; finish: Finish }) {
       </div>
 
       <form onSubmit={submit} className={`card text-center ${verdict === "wrong" ? "animate-shake" : ""}`}>
-        <p className="text-xs font-bold uppercase text-purple-400">How do you say it in English?</p>
-        <p className="mt-2 text-3xl font-black">{word.hu}</p>
+        {!picture && <p className="text-xs font-bold uppercase text-purple-400">How do you say it in English?</p>}
+        {picture && (
+          // Square, as large as fits next to everything else on a laptop screen.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={picture.url}
+            alt=""
+            className="mx-auto aspect-square rounded-2xl object-cover shadow-md ring-4 ring-purple-100"
+            style={{ width: "min(18rem, 30vh)" }}
+          />
+        )}
+        <p className={`mt-3 font-black ${picture ? "text-3xl" : "text-4xl"}`}>{word.hu}</p>
+        {clue && <p className="mt-1 italic text-purple-500">“{clue}”</p>}
         {hint > 0 && !verdict && <p className="mt-2 font-mono text-lg tracking-widest text-grape">{word.en.slice(0, hint)}…</p>}
 
         <input
@@ -96,7 +120,7 @@ function TypeIt({ round, finish }: { round: Word[]; finish: Finish }) {
           </div>
         )}
 
-        <div className="mt-4 flex justify-center gap-2">
+        <div ref={buttons} className="mt-4 flex justify-center gap-2">
           {!verdict && (
             <button type="button" className="btn-ghost" onClick={() => setHint(Math.min(hint + 1, word.en.length))}>
               💡 Hint

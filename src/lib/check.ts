@@ -33,3 +33,27 @@ export function checkAnswer(given: string, expected: string): Verdict {
   if (options.some((o) => o.length > 3 && distance(o, g) === 1)) return "typo";
   return "wrong";
 }
+
+/**
+ * Turns an example sentence into a clue by blanking out the word or expression,
+ * including simple other forms ("look forward to" → "She is _______ _______ __ the holiday").
+ * Returns null when the word can't be found, so the clue never gives the answer away.
+ */
+export function gapSentence(sentence: string, expected: string): string | null {
+  const words = expected
+    .replace(/\(.*?\)/g, " ")
+    .trim()
+    .replace(/^to\s+/i, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return null;
+  // A short stem matches other endings: make → making, study → studied, look → looking.
+  const stem = (w: string) => {
+    const s = w.toLowerCase().replace(/[^\p{L}'-]/gu, "");
+    return s.length > 3 ? s.replace(/[ey]$/, "") : s;
+  };
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(?<![\\p{L}])${words.map((w) => `${escape(stem(w))}\\p{L}*`).join("\\s+")}(?![\\p{L}])`, "iu");
+  if (!pattern.test(sentence)) return null;
+  return sentence.replace(pattern, (m) => m.replace(/\p{L}/gu, "_"));
+}
