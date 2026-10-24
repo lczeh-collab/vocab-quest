@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toJpegBase64 } from "@/lib/image";
+import { BADGES } from "@/lib/gamification";
 import { getPlayerId } from "@/lib/player";
+import { awardBadge } from "@/lib/progress";
 import type { Kind, ParsedPair } from "@/lib/types";
 import { useWords } from "@/lib/useData";
 
@@ -16,6 +18,7 @@ export default function ScanPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
+  const [newBadge, setNewBadge] = useState(false);
 
   async function parse(images: string[]) {
     setError(null);
@@ -69,6 +72,7 @@ export default function ScanPage() {
     setBusy(null);
     if (failed) return setError(failed.error!.message);
     setSaved(fresh.length + changed.length);
+    setNewBadge(fresh.length + changed.length > 0 && (await awardBadge(supabase, "snapshot")));
     setRows([]);
     reload();
   }
@@ -115,6 +119,11 @@ export default function ScanPage() {
         {saved !== null && (
           <div className="mt-4 rounded-2xl bg-emerald-50 p-4 text-center animate-pop">
             <p className="text-xl font-black text-mint">🎉 {saved} words saved!</p>
+            {newBadge && (
+              <p className="mt-2 text-lg font-black animate-pop">
+                {BADGES.find((b) => b.id === "snapshot")!.emoji} New badge: Snapshot!
+              </p>
+            )}
             <Link href="/" className="btn-primary mt-3">
               Let&apos;s play!
             </Link>

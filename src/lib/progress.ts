@@ -52,10 +52,14 @@ export async function finishRound(
   const xp = profile.xp + xpGained;
   const streak = nextStreak(profile);
 
-  const [{ count: wordCount }, { count: mastered }] = await Promise.all([
+  const [{ count: wordCount }, { count: mastered }, { data: pastRounds }] = await Promise.all([
     supabase.from("words").select("id", { count: "exact", head: true }).eq("player_id", profile.id),
     supabase.from("words").select("id", { count: "exact", head: true }).eq("player_id", profile.id).eq("box", 5),
+    supabase.from("rounds").select("game").eq("player_id", profile.id),
   ]);
+  // Include the round being saved right now.
+  const roundsPlayed = (pastRounds?.length ?? 0) + 1;
+  const gamesPlayed = new Set([...(pastRounds ?? []).map((r) => r.game), game]);
 
   const earned = new Set(profile.badges);
   const award = (id: string, cond: boolean) => cond && earned.add(id);
@@ -68,6 +72,15 @@ export async function finishRound(
   award("words50", (wordCount ?? 0) >= 50);
   award("mastered10", (mastered ?? 0) >= 10);
   award("xp1000", xp >= 1000);
+  award("words100", (wordCount ?? 0) >= 100);
+  award("mastered50", (mastered ?? 0) >= 50);
+  award("streak30", streak >= 30);
+  award("xp5000", xp >= 5000);
+  // A heart is only lost on a wrong answer, so a full round with no mistakes kept all hearts.
+  award("balloon_hero", game === "balloon" && total >= 12 && score === total);
+  award("spelling_bee", game === "type" && total >= 10 && score === total);
+  award("explorer", (["flashcards", "match", "type", "balloon"] as GameId[]).every((g) => gamesPlayed.has(g)));
+  award("dedicated", roundsPlayed >= 50);
   const newBadges = BADGES.map((b) => b.id).filter((id) => earned.has(id) && !profile.badges.includes(id));
 
   await Promise.all([
@@ -96,4 +109,12 @@ export async function finishRound(
     streak,
     tricky: [...byWord.values()].filter((a) => !a.correct).map((a) => a.word),
   };
+}
+
+/** Awards one badge outside a game round (e.g. the first scan). Returns true if it is new. */
+export async function awardBadge(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const player = await loadPlayer(supabase);
+  if (player.badges.includes(id)) return false;
+  const { error } = await supabase.from("players").update({ badges: [...player.badges, id] }).eq("id", player.id);
+  return !error;
 }

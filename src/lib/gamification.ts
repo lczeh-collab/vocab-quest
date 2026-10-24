@@ -31,6 +31,15 @@ export const BADGES: Badge[] = [
   { id: "words50", emoji: "📚", name: "Collector", hint: "Have 50 words in your list" },
   { id: "mastered10", emoji: "🧠", name: "Big Brain", hint: "Master 10 words (box 5)" },
   { id: "xp1000", emoji: "💎", name: "XP Diamond", hint: "Reach 1000 XP" },
+  { id: "snapshot", emoji: "📸", name: "Snapshot", hint: "Save words from your first notebook scan" },
+  { id: "words100", emoji: "📖", name: "Bookworm", hint: "Have 100 words in your list" },
+  { id: "mastered50", emoji: "🎓", name: "Professor", hint: "Master 50 words (box 5)" },
+  { id: "streak30", emoji: "🌟", name: "Month Master", hint: "Practice 30 days in a row" },
+  { id: "xp5000", emoji: "👑", name: "XP Royalty", hint: "Reach 5000 XP" },
+  { id: "balloon_hero", emoji: "🎈", name: "Balloon Hero", hint: "Finish a full Balloon Pop round without losing a heart" },
+  { id: "spelling_bee", emoji: "🐝", name: "Spelling Bee", hint: "Get every word right in a full Type It round" },
+  { id: "explorer", emoji: "🧭", name: "Explorer", hint: "Play all 4 games" },
+  { id: "dedicated", emoji: "🏅", name: "Dedicated", hint: "Finish 50 rounds" },
 ];
 
 /** Local date as YYYY-MM-DD, so streaks follow her day, not UTC. */
