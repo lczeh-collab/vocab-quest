@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toJpegBase64 } from "@/lib/image";
 import { BADGES } from "@/lib/gamification";
+import { makeMissingPictures, pictureKey, usePictures } from "@/lib/pictures";
 import { getPlayerId } from "@/lib/player";
 import { awardBadge } from "@/lib/progress";
 import type { Kind, ParsedPair } from "@/lib/types";
@@ -19,6 +20,8 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
   const [newBadge, setNewBadge] = useState(false);
+  const { pictures, put } = usePictures();
+  const [pictureStatus, setPictureStatus] = useState<string | null>(null);
 
   async function parse(images: string[]) {
     setError(null);
@@ -60,8 +63,17 @@ export default function ScanPage() {
     const fresh = [...unique.values()].filter((r) => statusOf(r) === "new");
     const changed = [...unique.values()].filter((r) => statusOf(r) === "update");
 
+    const inserted = fresh.length
+      ? await supabase
+          .from("words")
+          .insert(fresh.map(({ en, hu, kind }) => ({ player_id: getPlayerId(), en: en.trim(), hu: hu.trim(), kind })))
+          .select("id, en")
+      : { data: [], error: null };
+    if (inserted.error) {
+      setBusy(null);
+      return setError(inserted.error.message);
+    }
     const ops = [];
-    if (fresh.length) ops.push(supabase.from("words").insert(fresh.map(({ en, hu, kind }) => ({ player_id: getPlayerId(), en: en.trim(), hu: hu.trim(), kind }))));
     for (const r of changed) {
       // A changed meaning is new learning again, so it goes back to box 1.
       const id = existing.get(r.en.trim().toLowerCase())!.id;
@@ -75,6 +87,22 @@ export default function ScanPage() {
     setNewBadge(fresh.length + changed.length > 0 && (await awardBadge(supabase, "snapshot")));
     setRows([]);
     reload();
+    makePictures(inserted.data ?? []);
+  }
+
+  // Pictures for the new words are made in the background while she can already play.
+  async function makePictures(newWords: { id: string; en: string }[]) {
+    const have = (en: string) => !!pictures?.has(pictureKey(en));
+    if (!newWords.some((w) => !have(w.en))) return;
+    setPictureStatus("🎨 Making pictures for your new words…");
+    try {
+      await makeMissingPictures(newWords, have, (w, picture, done, total) => {
+        put(w.en, picture);
+        setPictureStatus(done === total ? "🖼️ All pictures are ready!" : `🎨 Making pictures… ${done} / ${total}`);
+      });
+    } catch (err) {
+      setPictureStatus(`Some pictures couldn't be made: ${(err as Error).message} You can try again on the Words page.`);
+    }
   }
 
   const update = (i: number, patch: Partial<Row>) => setRows((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -124,6 +152,7 @@ export default function ScanPage() {
                 {BADGES.find((b) => b.id === "snapshot")!.emoji} New badge: Snapshot!
               </p>
             )}
+            {pictureStatus && <p className="mt-2 font-bold text-grape">{pictureStatus}</p>}
             <Link href="/" className="btn-primary mt-3">
               Let&apos;s play!
             </Link>

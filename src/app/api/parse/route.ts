@@ -2,7 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { explainClaudeError } from "@/lib/claude-errors";
+import { requireAllowedUser } from "@/lib/supabase/auth";
 
 export const maxDuration = 60;
 
@@ -40,17 +41,8 @@ const anthropic = new Anthropic();
 
 export async function POST(request: Request) {
   // Only signed-in, allow-listed users may spend API credit.
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const allowed = (process.env.ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (!user || (allowed.length && !allowed.includes(user.email?.toLowerCase() ?? ""))) {
-    return NextResponse.json({ error: "Not allowed" }, { status: 401 });
-  }
+  const auth = await requireAllowedUser();
+  if (auth instanceof NextResponse) return auth;
 
   const body = Body.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "Please send a JPEG, PNG or WebP image." }, { status: 400 });
@@ -103,20 +95,6 @@ export async function POST(request: Request) {
   } catch (err) {
     if (!(err instanceof Anthropic.APIError)) throw err;
     console.error("Anthropic API error", err.status, err.message);
-    return NextResponse.json({ error: explain(err) }, { status: err instanceof Anthropic.RateLimitError ? 429 : 502 });
+    return NextResponse.json({ error: explainClaudeError(err, MODEL) }, { status: err instanceof Anthropic.RateLimitError ? 429 : 502 });
   }
-}
-
-/** Turns an API failure into a message that says what to fix. */
-function explain(err: InstanceType<typeof Anthropic.APIError>): string {
-  if (err instanceof Anthropic.AuthenticationError)
-    return "The Anthropic API key is wrong or was revoked. Check ANTHROPIC_API_KEY in Vercel (no spaces or quotes), then redeploy.";
-  if (err instanceof Anthropic.PermissionDeniedError) return "This Anthropic API key isn't allowed to use this model.";
-  if (err instanceof Anthropic.NotFoundError) return `The model "${MODEL}" isn't available for this API key. Check ANTHROPIC_MODEL in Vercel.`;
-  if (err instanceof Anthropic.RateLimitError) return "Too many photos at once. Wait a minute and try again.";
-  if (/credit balance/i.test(err.message))
-    return "The Anthropic account has no credit left. Add credit at console.anthropic.com → Billing.";
-  if (err instanceof Anthropic.BadRequestError) return `The reading service rejected the request: ${err.message}`;
-  if (err instanceof Anthropic.APIConnectionError) return "Couldn't reach the reading service. Check the internet connection and try again.";
-  return "The reading service is busy right now. Try again in a minute.";
 }
