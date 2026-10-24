@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Flashcards was removed; send old bookmarks to the home screen.
+  async redirects() {
+    return [{ source: "/play/flashcards", destination: "/", permanent: false }];
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

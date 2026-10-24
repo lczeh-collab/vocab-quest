@@ -79,7 +79,9 @@ export async function finishRound(
   // A heart is only lost on a wrong answer, so a full round with no mistakes kept all hearts.
   award("balloon_hero", game === "balloon" && total >= 12 && score === total);
   award("spelling_bee", game === "type" && total >= 10 && score === total);
-  award("explorer", (["flashcards", "match", "type", "balloon"] as GameId[]).every((g) => gamesPlayed.has(g)));
+  // "Play all 4 games": stays out of reach until a 4th game is added to this list.
+  const allGames: GameId[] = ["match", "type", "balloon"];
+  award("explorer", allGames.length >= 4 && allGames.every((g) => gamesPlayed.has(g)));
   award("dedicated", roundsPlayed >= 50);
   const newBadges = BADGES.map((b) => b.id).filter((id) => earned.has(id) && !profile.badges.includes(id));
 

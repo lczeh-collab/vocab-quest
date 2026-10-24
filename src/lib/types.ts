@@ -32,7 +32,7 @@ export interface ParsedPair {
   uncertain: boolean;
 }
 
-export type GameId = "flashcards" | "match" | "type" | "balloon";
+export type GameId = "match" | "type" | "balloon";
 
 export interface Answer {
   word: Word;
