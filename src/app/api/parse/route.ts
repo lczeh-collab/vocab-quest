@@ -55,17 +55,20 @@ export async function POST(request: Request) {
   const body = Body.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "Please send a JPEG, PNG or WebP image." }, { status: 400 });
 
-  // Server-side fallback re-runs a declined request on another model. Haiku has no fallback.
-  const fallback = MODEL.includes("haiku")
-    ? {}
-    : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const };
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json(
+      { error: "ANTHROPIC_API_KEY is not set. Add it in Vercel → Settings → Environment Variables, then redeploy." },
+      { status: 500 },
+    );
+  }
 
-  try {
-    const response = await anthropic.beta.messages.parse({
+  const callClaude = (withFallback: boolean) =>
+    anthropic.beta.messages.parse({
       model: MODEL,
       max_tokens: 16000,
       output_config: { effort: "medium", format: betaZodOutputFormat(Extraction) },
-      ...fallback,
+      // Server-side fallback re-runs a declined request on another model.
+      ...(withFallback ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
       messages: [
         {
           role: "user",
@@ -77,6 +80,19 @@ export async function POST(request: Request) {
       ],
     });
 
+  try {
+    let response;
+    try {
+      // Haiku has no server-side fallback.
+      response = await callClaude(!MODEL.includes("haiku"));
+    } catch (err) {
+      // If this account or model doesn't accept the fallback option, read the photo without it.
+      if (err instanceof Anthropic.BadRequestError && /fallback|beta/i.test(err.message)) {
+        console.warn("Retrying without fallback:", err.message);
+        response = await callClaude(false);
+      } else throw err;
+    }
+
     if (response.stop_reason === "refusal" || !response.parsed_output) {
       return NextResponse.json({ error: "Couldn't read this photo. Try a sharper, well-lit one." }, { status: 422 });
     }
@@ -85,13 +101,22 @@ export async function POST(request: Request) {
       .filter((p) => p.en && p.hu);
     return NextResponse.json({ pairs });
   } catch (err) {
-    if (err instanceof Anthropic.RateLimitError) {
-      return NextResponse.json({ error: "Too many photos at once, wait a minute and try again." }, { status: 429 });
-    }
-    if (err instanceof Anthropic.APIError) {
-      console.error("Anthropic API error", err.status, err.message);
-      return NextResponse.json({ error: "The reading service had a problem. Try again." }, { status: 502 });
-    }
-    throw err;
+    if (!(err instanceof Anthropic.APIError)) throw err;
+    console.error("Anthropic API error", err.status, err.message);
+    return NextResponse.json({ error: explain(err) }, { status: err instanceof Anthropic.RateLimitError ? 429 : 502 });
   }
+}
+
+/** Turns an API failure into a message that says what to fix. */
+function explain(err: InstanceType<typeof Anthropic.APIError>): string {
+  if (err instanceof Anthropic.AuthenticationError)
+    return "The Anthropic API key is wrong or was revoked. Check ANTHROPIC_API_KEY in Vercel (no spaces or quotes), then redeploy.";
+  if (err instanceof Anthropic.PermissionDeniedError) return "This Anthropic API key isn't allowed to use this model.";
+  if (err instanceof Anthropic.NotFoundError) return `The model "${MODEL}" isn't available for this API key. Check ANTHROPIC_MODEL in Vercel.`;
+  if (err instanceof Anthropic.RateLimitError) return "Too many photos at once. Wait a minute and try again.";
+  if (/credit balance/i.test(err.message))
+    return "The Anthropic account has no credit left. Add credit at console.anthropic.com → Billing.";
+  if (err instanceof Anthropic.BadRequestError) return `The reading service rejected the request: ${err.message}`;
+  if (err instanceof Anthropic.APIConnectionError) return "Couldn't reach the reading service. Check the internet connection and try again.";
+  return "The reading service is busy right now. Try again in a minute.";
 }
