@@ -1,4 +1,4 @@
-import type { Profile } from "./types";
+import type { Player } from "./types";
 
 export const XP_PER_CORRECT = 10;
 export const XP_ROUND_BONUS = 20;
@@ -39,7 +39,7 @@ export function today(d = new Date()) {
   return new Date(d.getTime() - off).toISOString().slice(0, 10);
 }
 
-export function nextStreak(profile: Pick<Profile, "streak" | "last_played">, now = new Date()) {
+export function nextStreak(profile: Pick<Player, "streak" | "last_played">, now = new Date()) {
   const t = today(now);
   if (profile.last_played === t) return profile.streak;
   const yesterday = today(new Date(now.getTime() - 86400000));

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { PLAYER_COOKIE } from "@/lib/player";
 
 // Refreshes the Supabase session cookie and sends logged-out visitors to /login.
 export async function proxy(request: NextRequest) {
@@ -37,6 +38,14 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Logged in, but nobody picked "Who's playing?" yet.
+  const needsPlayer = !isPublic && !path.startsWith("/players") && !path.startsWith("/api");
+  if (user && needsPlayer && !request.cookies.get(PLAYER_COOKIE)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/players";
     return NextResponse.redirect(url);
   }
   return response;

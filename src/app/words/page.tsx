@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getPlayerId } from "@/lib/player";
 import type { Word } from "@/lib/types";
 import { useWords } from "@/lib/useData";
 
@@ -35,7 +36,7 @@ export default function WordsPage() {
     const en = adding.en.trim();
     const hu = adding.hu.trim();
     if (!en || !hu) return;
-    const { error } = await supabase.from("words").insert({ en, hu, kind: en.includes(" ") ? "expression" : "word" });
+    const { error } = await supabase.from("words").insert({ player_id: getPlayerId(), en, hu, kind: en.includes(" ") ? "expression" : "word" });
     if (error) return alert(error.code === "23505" ? `"${en}" is already in your list.` : error.message);
     setAdding({ en: "", hu: "" });
     reload();

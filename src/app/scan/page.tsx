@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toJpegBase64 } from "@/lib/image";
+import { getPlayerId } from "@/lib/player";
 import type { Kind, ParsedPair } from "@/lib/types";
 import { useWords } from "@/lib/useData";
 
@@ -57,7 +58,7 @@ export default function ScanPage() {
     const changed = [...unique.values()].filter((r) => statusOf(r) === "update");
 
     const ops = [];
-    if (fresh.length) ops.push(supabase.from("words").insert(fresh.map(({ en, hu, kind }) => ({ en: en.trim(), hu: hu.trim(), kind }))));
+    if (fresh.length) ops.push(supabase.from("words").insert(fresh.map(({ en, hu, kind }) => ({ player_id: getPlayerId(), en: en.trim(), hu: hu.trim(), kind }))));
     for (const r of changed) {
       // A changed meaning is new learning again, so it goes back to box 1.
       const id = existing.get(r.en.trim().toLowerCase())!.id;

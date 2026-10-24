@@ -14,28 +14,40 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 ```
 
 - **Spaced repetition:** each word sits in a Leitner box 1–5. A right answer moves it up a box (due again after 0/1/3/7/14 days); a wrong answer sends it back to box 1. Each round picks due words first.
-- **Games:** Flashcards (EN↔HU, keyboard: space / ← / →), Speed Match (against the clock), Type It (lenient checking that accepts typos and missing accents, with hints).
+- **Games:** Flashcards (EN↔HU, keyboard: space / ← / →), Speed Match (against the clock), Type It (lenient checking that accepts typos and missing accents, with hints), Balloon Pop (pick the translation before the balloon escapes).
 - **Gamification:** XP, levels and titles, daily streak, combos, 9 badges, end-of-round feedback with "tricky words".
+- **Family players:** after the family email login, a "Who's playing?" screen. Each player has a name, avatar, colour and 4-digit PIN, plus their own words, XP, streak and badges.
 
 | Path | What |
 |---|---|
 | `src/app/api/parse/route.ts` | Claude call: image → structured word pairs |
 | `src/app/scan/page.tsx` | Upload / webcam capture + review screen |
 | `src/app/words/page.tsx` | Word list: edit, delete, add, search |
-| `src/app/play/*` | The three games |
+| `src/app/play/*` | The four games |
 | `src/components/GameShell.tsx` | Round loading + results/feedback screen |
 | `src/lib/leitner.ts`, `progress.ts`, `gamification.ts`, `check.ts` | Learning logic |
-| `supabase/schema.sql` | Database tables + security policies |
+| `src/app/players/page.tsx`, `src/app/me/page.tsx` | Who's playing? / add player / edit profile and PIN |
+| `supabase/schema.sql`, `supabase/002_players.sql` | Database tables, player PIN functions, security policies |
 
 ## Setup (about 20 minutes)
 
 1. **Supabase**: create a free project at supabase.com.
-   - SQL Editor → paste `supabase/schema.sql` → Run.
+   - SQL Editor → paste `supabase/schema.sql` → Run, then the same with `supabase/002_players.sql`.
    - Authentication → URL Configuration: set **Site URL** to your Vercel URL and add `http://localhost:3000/**` and `https://<your-app>.vercel.app/**` to Redirect URLs.
    - After you and she have each logged in once, turn off **Allow new users to sign up** (Authentication → Sign In / Providers).
 2. **Anthropic**: console.anthropic.com → add a few dollars of credit → create an API key. Optionally set a monthly spend limit.
 3. **Local run**: `cp .env.example .env.local`, fill in the values, then `npm install && npm run dev` → http://localhost:3000
 4. **Deploy**: push to GitHub → vercel.com → *Add New Project* → import the repo → add the env vars from `.env.example` → Deploy. Every `git push` redeploys.
+
+## Forgotten PIN
+
+In Supabase → SQL Editor, run this with the player's name and a new PIN (it also clears a lockout):
+
+```sql
+update public.player_pins set pin_hash = extensions.crypt('1234', extensions.gen_salt('bf')),
+       failed_tries = 0, locked_until = null
+ where player_id = (select id from public.players where name = 'Anna');
+```
 
 ## Costs
 

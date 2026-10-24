@@ -12,8 +12,11 @@ export interface Word {
   created_at: string;
 }
 
-export interface Profile {
-  user_id: string;
+export interface Player {
+  id: string;
+  name: string;
+  avatar: string;
+  color: string;
   xp: number;
   streak: number;
   best_streak: number;

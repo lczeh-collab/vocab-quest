@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BADGES, levelFor, titleFor } from "@/lib/gamification";
-import { useProfile, useWords } from "@/lib/useData";
+import { usePlayer, useWords } from "@/lib/useData";
 
 const GAMES = [
   { href: "/play/flashcards", emoji: "🃏", name: "Flashcards", text: "Flip, guess, level up", color: "from-violet-400 to-purple-500" },
@@ -12,7 +12,7 @@ const GAMES = [
 ];
 
 export default function Home() {
-  const profile = useProfile();
+  const profile = usePlayer();
   const { words } = useWords();
 
   if (!profile || !words) return <p className="mt-20 text-center text-xl">Loading... ✨</p>;

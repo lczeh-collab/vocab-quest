@@ -1,14 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BADGES, XP_PER_CORRECT, XP_ROUND_BONUS, levelFor, nextStreak, today } from "./gamification";
 import { nextReview } from "./leitner";
-import type { Answer, GameId, Profile } from "./types";
+import { clearPlayerId, getPlayerId, reloadTo } from "./player";
+import type { Answer, GameId, Player } from "./types";
 
-export async function loadProfile(supabase: SupabaseClient): Promise<Profile> {
-  const { data } = await supabase.from("profiles").select("*").maybeSingle();
-  if (data) return data as Profile;
-  const { data: created, error } = await supabase.from("profiles").insert({}).select().single();
+export async function loadPlayer(supabase: SupabaseClient): Promise<Player> {
+  const { data, error } = await supabase.from("players").select("*").eq("id", getPlayerId()).maybeSingle();
   if (error) throw error;
-  return created as Profile;
+  if (!data) {
+    // The remembered player no longer exists (or belongs to another login).
+    clearPlayerId();
+    reloadTo("/players");
+    throw new Error("Unknown player");
+  }
+  return data as Player;
 }
 
 export interface RoundSummary {
@@ -43,13 +48,13 @@ export async function finishRound(
   const total = answers.length;
   const xpGained = score * XP_PER_CORRECT + (total ? XP_ROUND_BONUS : 0);
 
-  const profile = await loadProfile(supabase);
+  const profile = await loadPlayer(supabase);
   const xp = profile.xp + xpGained;
   const streak = nextStreak(profile);
 
   const [{ count: wordCount }, { count: mastered }] = await Promise.all([
-    supabase.from("words").select("id", { count: "exact", head: true }),
-    supabase.from("words").select("id", { count: "exact", head: true }).eq("box", 5),
+    supabase.from("words").select("id", { count: "exact", head: true }).eq("player_id", profile.id),
+    supabase.from("words").select("id", { count: "exact", head: true }).eq("player_id", profile.id).eq("box", 5),
   ]);
 
   const earned = new Set(profile.badges);
@@ -67,17 +72,16 @@ export async function finishRound(
 
   await Promise.all([
     supabase
-      .from("profiles")
+      .from("players")
       .update({
         xp,
         streak,
         best_streak: Math.max(profile.best_streak, streak),
         last_played: today(),
         badges: [...earned],
-        updated_at: new Date().toISOString(),
       })
-      .eq("user_id", profile.user_id),
-    supabase.from("rounds").insert({ game, score, total, xp: xpGained, seconds: extra.seconds ?? null }),
+      .eq("id", profile.id),
+    supabase.from("rounds").insert({ player_id: profile.id, game, score, total, xp: xpGained, seconds: extra.seconds ?? null }),
   ]);
 
   const before = levelFor(profile.xp).level;

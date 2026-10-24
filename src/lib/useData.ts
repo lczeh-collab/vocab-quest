@@ -3,15 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { lazyClient } from "./supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadProfile } from "./progress";
-import type { Profile, Word } from "./types";
+import { getPlayerId } from "./player";
+import { loadPlayer } from "./progress";
+import type { Player, Word } from "./types";
 
 export function useSupabase() {
   return useMemo(() => lazyClient(), []);
 }
 
 async function fetchWords(supabase: SupabaseClient) {
-  const { data } = await supabase.from("words").select("*").order("created_at", { ascending: false });
+  const { data } = await supabase
+    .from("words")
+    .select("*")
+    .eq("player_id", getPlayerId())
+    .order("created_at", { ascending: false });
   return (data as Word[]) ?? [];
 }
 
@@ -29,11 +34,11 @@ export function useWords() {
   return { words, reload, supabase };
 }
 
-export function useProfile() {
+export function usePlayer() {
   const supabase = useSupabase();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Player | null>(null);
   useEffect(() => {
-    loadProfile(supabase).then(setProfile);
+    loadPlayer(supabase).then(setProfile);
   }, [supabase]);
   return profile;
 }
