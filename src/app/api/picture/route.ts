@@ -4,7 +4,9 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
 import { explainClaudeError } from "@/lib/claude-errors";
+import { pictureUrl } from "@/lib/picture-url";
 import { requireAllowedUser } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 
 // Image generation takes ~10-30 s.
 export const maxDuration = 120;
@@ -13,7 +15,6 @@ const PLAN_MODEL = process.env.PICTURE_PLAN_MODEL || "claude-haiku-5-5";
 const IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1-mini";
 const IMAGE_QUALITY = (process.env.OPENAI_IMAGE_QUALITY || "medium") as "low" | "medium" | "high";
 const DAILY_LIMIT = Number(process.env.PICTURE_DAILY_LIMIT || 60);
-const SIGNED_URL_SECONDS = 60 * 60;
 
 const Body = z.object({ wordId: z.string().uuid(), renew: z.boolean().optional() });
 
@@ -46,7 +47,7 @@ const anthropic = new Anthropic();
 export async function POST(request: Request) {
   const auth = await requireAllowedUser();
   if (auth instanceof NextResponse) return auth;
-  const { supabase, user } = auth;
+  const { supabase } = auth;
 
   for (const key of ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]) {
     if (!process.env[key]) return fail(`${key} is not set. Add it in Vercel → Settings → Environment Variables, then redeploy.`, 500);
@@ -62,8 +63,12 @@ export async function POST(request: Request) {
   if (!word) return fail("Word not found.", 404);
   const enKey = word.en.trim().toLowerCase();
 
-  const { data: existing } = await supabase.from("word_pictures").select("path, scene, example").eq("en_key", enKey).maybeSingle();
-  if (existing && !body.data.renew) return NextResponse.json(await withUrl(existing));
+  const { data: existing } = await supabase
+    .from("word_pictures")
+    .select("en_key, scene, example, created_at")
+    .eq("en_key", enKey)
+    .maybeSingle();
+  if (existing && !body.data.renew) return NextResponse.json(describe(existing));
 
   // Spending guard: at most DAILY_LIMIT new pictures per family per 24 hours.
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -108,23 +113,38 @@ export async function POST(request: Request) {
     return fail(explainOpenAIError(err), err.status === 429 ? 429 : 502);
   }
 
-  // 3. Store the file, then point the word at it (and drop the old picture).
-  const path = `${user.id}/${crypto.randomUUID()}.webp`;
-  const upload = await supabase.storage.from("pictures").upload(path, image, { contentType: "image/webp" });
-  if (upload.error) return fail(`Couldn't save the picture: ${upload.error.message}`, 500);
-
-  const saved = { en_key: enKey, path, scene: plan.scene, example: plan.example };
+  // 3. Save it in the table: one row per English word per family, replacing an old picture.
+  const saved = {
+    en_key: enKey,
+    image: `\\x${image.toString("hex")}`, // bytea in PostgREST's hex format
+    path: null,
+    scene: plan.scene,
+    example: plan.example,
+    created_at: new Date().toISOString(),
+  };
   const { error } = await supabase.from("word_pictures").upsert(saved, { onConflict: "user_id,en_key" });
-  if (error) return fail(`Couldn't save the picture: ${error.message}`, 500);
+  if (error) return fail(`Couldn't save the picture in the database: ${error.message}`, 500);
   await supabase.from("picture_log").insert({});
-  if (existing) await supabase.storage.from("pictures").remove([existing.path]);
 
-  return NextResponse.json(await withUrl(saved));
+  return NextResponse.json(describe(saved));
+}
 
-  async function withUrl(p: { path: string; example: string | null }) {
-    const { data } = await supabase.storage.from("pictures").createSignedUrl(p.path, SIGNED_URL_SECONDS);
-    return { path: p.path, example: p.example, url: data?.signedUrl ?? null };
-  }
+/** Serves a picture to the family it belongs to (the table's row level security decides). */
+export async function GET(request: Request) {
+  const key = new URL(request.url).searchParams.get("key");
+  if (!key) return fail("Missing key.", 400);
+  const supabase = await createClient();
+  const { data } = await supabase.from("word_pictures").select("image").eq("en_key", key).maybeSingle();
+  if (!data?.image) return new Response(null, { status: 404 });
+  const bytes = new Uint8Array(Buffer.from(String(data.image).replace(/^\\x/, ""), "hex"));
+  return new Response(bytes, {
+    // The URL carries a version, so a picture never changes under the same address.
+    headers: { "Content-Type": "image/webp", "Cache-Control": "private, max-age=31536000, immutable" },
+  });
+}
+
+function describe(p: { en_key: string; example: string | null; created_at: string }) {
+  return { example: p.example, url: pictureUrl(p.en_key, p.created_at) };
 }
 
 function fail(error: string, status: number) {

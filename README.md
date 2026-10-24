@@ -16,7 +16,7 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 - **Spaced repetition:** each word sits in a Leitner box 1–5. A right answer moves it up a box (due again after 0/1/3/7/14 days); a wrong answer sends it back to box 1. Each round picks due words first.
 - **Games:** Flashcards (EN↔HU, keyboard: space / ← / →), Speed Match (against the clock), Type It (lenient checking that accepts typos and missing accents, with hints), Balloon Pop (pick the translation before the balloon escapes).
 - **Gamification:** XP, levels and titles, daily streak, combos, 9 badges, end-of-round feedback with "tricky words".
-- **Pictures:** every word gets an AI picture. Claude Haiku decides what to show (for hard words like "although" it picks a simple example expression and pictures that), GPT (`gpt-image-1-mini`) draws it, and it is stored privately in Supabase Storage. One picture per word per family, shared by siblings; "🔄 New picture" on the Words page replaces it.
+- **Pictures:** every word gets an AI picture. Claude Haiku decides what to show (for hard words like "although" it picks a simple example expression and pictures that), GPT (`gpt-image-1-mini`) draws it, and it is stored in the `word_pictures` table (served only to its family by `/api/picture`). One picture per word per family, shared by siblings; "🔄 New picture" on the Words page replaces it.
 - **Family players:** after the family email login, a "Who's playing?" screen. Each player has a name, avatar, colour and 4-digit PIN, plus their own words, XP, streak and badges.
 
 | Path | What |
@@ -29,12 +29,12 @@ Browser ── photo (resized to 1600px JPEG) ──▶ /api/parse ──▶ Cla
 | `src/lib/leitner.ts`, `progress.ts`, `gamification.ts`, `check.ts` | Learning logic |
 | `src/app/players/page.tsx`, `src/app/me/page.tsx` | Who's playing? / add player / edit profile and PIN |
 | `src/app/api/picture/route.ts`, `src/lib/pictures.ts` | Picture planning (Claude) + drawing (GPT) + storage |
-| `supabase/schema.sql`, `002_players.sql`, `003_pictures.sql` | Database tables, player PIN functions, pictures, security policies |
+| `supabase/schema.sql`, `002_players.sql`, `003_pictures.sql`, `004_pictures_in_table.sql` | Database tables, player PIN functions, pictures, security policies |
 
 ## Setup (about 20 minutes)
 
 1. **Supabase**: create a free project at supabase.com.
-   - SQL Editor → paste `supabase/schema.sql` → Run, then the same with `supabase/002_players.sql` and `supabase/003_pictures.sql`.
+   - SQL Editor → paste `supabase/schema.sql` → Run, then the same with `supabase/002_players.sql` `supabase/003_pictures.sql` and `supabase/004_pictures_in_table.sql`.
    - Authentication → URL Configuration: set **Site URL** to your Vercel URL and add `http://localhost:3000/**` and `https://<your-app>.vercel.app/**` to Redirect URLs.
    - After you and she have each logged in once, turn off **Allow new users to sign up** (Authentication → Sign In / Providers).
 2. **Anthropic**: console.anthropic.com → add a few dollars of credit → create an API key. Optionally set a monthly spend limit.

@@ -217,7 +217,7 @@ function Thumbnail({
   if (picture)
     return (
       <button className={`${box} ring-2 ring-purple-100 transition hover:scale-110`} onClick={onOpen} aria-label="Show picture">
-        {/* Signed Supabase URLs expire, so Next's image optimizer would only cache dead links. */}
+        {/* Pictures need the login cookie, which Next's image optimizer doesn't send. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={picture.url} alt="" className="h-full w-full object-cover" />
       </button>

@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
+import { pictureUrl } from "./picture-url";
 import type { Word } from "./types";
 import { useSupabase } from "./useData";
 
@@ -12,19 +13,10 @@ export interface Picture {
 
 export const pictureKey = (en: string) => en.trim().toLowerCase();
 
-/** All pictures of the family, keyed by lower-cased English word, with 1-hour private links. */
+/** All pictures of the family, keyed by lower-cased English word (the image bytes load separately). */
 async function fetchPictures(supabase: SupabaseClient): Promise<Map<string, Picture>> {
-  const { data } = await supabase.from("word_pictures").select("en_key, path, example");
-  const rows = data ?? [];
-  if (!rows.length) return new Map();
-  const { data: signed } = await supabase.storage.from("pictures").createSignedUrls(
-    rows.map((r) => r.path),
-    60 * 60,
-  );
-  const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
-  return new Map(
-    rows.filter((r) => urlByPath.get(r.path)).map((r) => [r.en_key, { url: urlByPath.get(r.path)!, example: r.example }]),
-  );
+  const { data } = await supabase.from("word_pictures").select("en_key, example, created_at").not("image", "is", null);
+  return new Map((data ?? []).map((r) => [r.en_key, { url: pictureUrl(r.en_key, r.created_at), example: r.example }]));
 }
 
 export function usePictures() {
