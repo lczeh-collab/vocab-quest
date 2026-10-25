@@ -122,11 +122,16 @@ function Results({ summary, onAgain }: { summary: RoundSummary; onAgain: () => v
   );
 }
 
-export function speak(text: string) {
-  if (typeof speechSynthesis === "undefined") return;
+/** Reads English text aloud; onEnd runs when it has finished (or was cut off by the next one). */
+export function speak(text: string, onEnd?: () => void) {
+  if (typeof speechSynthesis === "undefined") return onEnd?.();
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/\(.*?\)/g, ""));
   u.lang = "en-GB";
   u.rate = 0.9;
+  if (onEnd) {
+    u.onend = onEnd;
+    u.onerror = onEnd;
+  }
   speechSynthesis.speak(u);
 }

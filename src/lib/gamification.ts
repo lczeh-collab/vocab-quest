@@ -38,9 +38,10 @@ export const BADGES: Badge[] = [
   { id: "xp5000", emoji: "👑", name: "XP Royalty", hint: "Reach 5000 XP" },
   { id: "balloon_hero", emoji: "🎈", name: "Balloon Hero", hint: "Finish a full Balloon Pop round without losing a heart" },
   { id: "spelling_bee", emoji: "🐝", name: "Spelling Bee", hint: "Get every word right in a full Type It round" },
-  { id: "explorer", emoji: "🧭", name: "Explorer", hint: "Play all 4 games" },
+  { id: "explorer", emoji: "🧭", name: "Explorer", hint: "Play all 5 games" },
   { id: "dedicated", emoji: "🏅", name: "Dedicated", hint: "Finish 50 rounds" },
   { id: "memory_master", emoji: "🃏", name: "Memory Master", hint: "Clear an 8-pair Memory board in 12 moves or fewer" },
+  { id: "golden_ears", emoji: "👂", name: "Golden Ears", hint: "Get all 10 right in a Listen & Pick round" },
 ];
 
 /** Local date as YYYY-MM-DD, so streaks follow her day, not UTC. */

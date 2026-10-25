@@ -9,6 +9,7 @@ const GAMES = [
   { href: "/play/type", emoji: "⌨️", name: "Type It!", text: "Type the translation, build combos", color: "from-amber-300 to-orange-400" },
   { href: "/play/balloon", emoji: "🎈", name: "Balloon Pop", text: "Pop the right balloon before it flies away", color: "from-sky-400 to-cyan-500" },
   { href: "/play/memory", emoji: "🧠", name: "Memory", text: "Flip two cards, find the pairs", color: "from-emerald-400 to-teal-500" },
+  { href: "/play/listen", emoji: "👂", name: "Listen & Pick", text: "Hear three words, pick the right one", color: "from-indigo-400 to-violet-500" },
 ];
 
 export default function Home() {
@@ -54,7 +55,7 @@ export default function Home() {
           <p className="text-center text-lg font-bold">
             {due > 0 ? `${due} word${due === 1 ? "" : "s"} waiting for practice today 💪` : "All caught up! Play for bonus XP 🌟"}
           </p>
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {GAMES.map((g) => (
               <Link
                 key={g.href}
